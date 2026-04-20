@@ -1,0 +1,8 @@
+{
+  "include": ["labs"],
+  "pythonVersion": "3.9",
+  "analysis": {
+    "extraPaths": ["labs/src"],
+    "typeCheckingMode": "basic"
+  }
+}
