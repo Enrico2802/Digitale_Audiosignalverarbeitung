@@ -26,6 +26,12 @@ Dieses Repository enthält die Übungen zur digitalen Audiosignalverarbeitung. E
 Im Projektverzeichnis:
 
 ```bash
+python -m pip install -r requirements.txt
+```
+
+Alternativ kannst du die Pakete auch einzeln installieren:
+
+```bash
 python -m pip install numpy matplotlib soundfile
 ```
 
