@@ -66,5 +66,6 @@ Für andere Aufgaben die entsprechende Datei auswählen, z. B.:
 
 ## Weiteres
 
+- Für die Visualisierung https://docs.manim.community/en/stable/examples.html
 - Zum Einstieg eignen sich besonders die Skripte in `labs/week01/`.
 - Für visuelle Ergebnisse sollten Sie in einer Umgebung mit Anzeigeunterstützung arbeiten (z. B. lokales Python, VS Code mit GUI).
