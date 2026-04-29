@@ -2,6 +2,12 @@
 
 Dieses Repository enthält die Übungen zur digitalen Audiosignalverarbeitung. Es ist in mehrere Laborwochen aufgeteilt und enthält Python-Skripte zur Erzeugung, Analyse und Visualisierung von Audiosignalen.
 
+## How to Animate
+ python dasp-labs-main/labs/week03/render_parallel.py task01
+ python dasp-labs-main/labs/week03/render_parallel.py task02
+ python dasp-labs-main/labs/week03/render_parallel.py task03
+Funktioniert aktuell nur für Woche 3 
+
 ## Projektstruktur
 
 - `assets/audio/`

@@ -7,18 +7,24 @@ Answers the TODO reflection questions:
   Q4  Trade-off: narrow main lobe vs. high side lobes
   Q5  Best window for guitar analysis
 
-Run from the repository root:
-    manim -pql labs/week03/task02_manim.py WindowComparison
+Parallel render (recommended):
+    python dasp-labs-main/labs/week03/render_parallel.py task02
+
+Single scene:
+    manim -qk dasp-labs-main/labs/week03/task02_manim.py WindowShapeScene
 """
 from manim import *
 import numpy as np
 
+config.frame_rate = 60
+config.pixel_height = 2160
+config.pixel_width = 3840
 
 WINDOWS = [
-    ("Rectangular", np.ones,        BLUE,   -13),
-    ("Hann",        np.hanning,     GREEN,  -31),
-    ("Hamming",     np.hamming,     ORANGE, -41),
-    ("Blackman",    np.blackman,    RED,    -57),
+    ("Rectangular", np.ones,     BLUE,   -13),
+    ("Hann",        np.hanning,  GREEN,  -31),
+    ("Hamming",     np.hamming,  ORANGE, -41),
+    ("Blackman",    np.blackman, RED,    -57),
 ]
 
 MAIN_LOBE = {
@@ -29,19 +35,17 @@ MAIN_LOBE = {
 }
 
 
-class WindowComparison(Scene):
+class WindowShapeScene(Scene):
     def construct(self):
         N = 256
         n = np.arange(N)
         N_pad = 8192
 
-        # ── Title ──────────────────────────────────────────────────────────────
         title = Text("Window Functions", font_size=40, color=YELLOW)
         self.play(Write(title))
         self.wait(0.6)
         self.play(title.animate.scale(0.6).to_edge(UP))
 
-        # ── Axes (time + frequency response) ───────────────────────────────────
         ax_t = Axes(
             x_range=[0, N - 1, 64], y_range=[-0.1, 1.15, 0.5],
             x_length=5.5, y_length=2.5, tips=False,
@@ -52,11 +56,11 @@ class WindowComparison(Scene):
             x_length=5.5, y_length=2.5, tips=False,
         ).shift(RIGHT * 3.2 + UP * 0.35)
 
-        t_hdr = Text("Window shape (time domain)", font_size=17).next_to(ax_t, UP, buff=0.05)
-        f_hdr = Text("Frequency response", font_size=17).next_to(ax_f, UP, buff=0.05)
-        t_lbl = Text("n  (sample)", font_size=16).next_to(ax_t, DOWN, buff=0.1)
-        f_lbl = Text("bins from peak", font_size=16).next_to(ax_f, DOWN, buff=0.1)
-        f_ylbl = Text("dB", font_size=15).next_to(ax_f, LEFT, buff=0.05)
+        t_hdr  = Text("Window shape (time domain)", font_size=17).next_to(ax_t, UP,   buff=0.05)
+        f_hdr  = Text("Frequency response",         font_size=17).next_to(ax_f, UP,   buff=0.05)
+        t_lbl  = Text("n  (sample)",                font_size=16).next_to(ax_t, DOWN, buff=0.1)
+        f_lbl  = Text("bins from peak",             font_size=16).next_to(ax_f, DOWN, buff=0.1)
+        f_ylbl = Text("dB",                         font_size=15).next_to(ax_f, LEFT, buff=0.05)
 
         self.play(Create(ax_t), Create(ax_f),
                   Write(t_hdr), Write(f_hdr),
@@ -65,40 +69,23 @@ class WindowComparison(Scene):
         prev_group = None
 
         for name, win_fn, color, sl_db in WINDOWS:
-            w = win_fn(N)
+            w   = win_fn(N)
+            W   = np.fft.fftshift(np.fft.fft(w, N_pad))
+            W_db = 20 * np.log10(np.abs(W) / np.abs(W).max() + 1e-12)
+            k_idx  = np.arange(-N_pad // 2, N_pad // 2)
+            x_bins = k_idx * N / N_pad
+            mask   = np.abs(x_bins) <= 20
 
-            # Time-domain graph
             t_graph = ax_t.plot_line_graph(
                 n.tolist(), w.tolist(),
-                line_color=color, add_vertex_dots=False, stroke_width=2.5,
-            )
-
-            # Frequency response: zero-pad, FFT, fftshift, convert to dB
-            W = np.fft.fft(w, N_pad)
-            W = np.fft.fftshift(W)
-            W_db = 20 * np.log10(np.abs(W) / np.abs(W).max() + 1e-12)
-
-            # x-axis in "window bins" (1 unit = Δf = fs/N)
-            k_idx = np.arange(-N_pad // 2, N_pad // 2)
-            x_bins = k_idx * N / N_pad
-            mask = np.abs(x_bins) <= 20
-            x_disp = x_bins[mask].tolist()
-            y_disp = np.clip(W_db[mask], -70, 5).tolist()
-
+                line_color=color, add_vertex_dots=False, stroke_width=2.5)
             f_graph = ax_f.plot_line_graph(
-                x_disp, y_disp,
-                line_color=color, add_vertex_dots=False, stroke_width=2.5,
-            )
-
-            # Side-lobe level dashed line
-            sl_line = DashedLine(
-                ax_f.c2p(-20, sl_db), ax_f.c2p(20, sl_db),
-                color=color, stroke_width=1.5, dash_length=0.12,
-            )
-            sl_tag = Text(f"{sl_db} dB", font_size=14, color=color).next_to(
-                ax_f.c2p(20, sl_db), RIGHT, buff=0.08,
-            )
-
+                x_bins[mask].tolist(), np.clip(W_db[mask], -70, 5).tolist(),
+                line_color=color, add_vertex_dots=False, stroke_width=2.5)
+            sl_line = DashedLine(ax_f.c2p(-20, sl_db), ax_f.c2p(20, sl_db),
+                                 color=color, stroke_width=1.5, dash_length=0.12)
+            sl_tag  = Text(f"{sl_db} dB", font_size=14, color=color).next_to(
+                          ax_f.c2p(20, sl_db), RIGHT, buff=0.08)
             info = VGroup(
                 Text(name, font_size=24, color=color),
                 Text(f"Peak side lobe: {sl_db} dB   |   Main lobe: {MAIN_LOBE[name]}",
@@ -111,38 +98,26 @@ class WindowComparison(Scene):
                 self.play(Create(t_graph), Create(f_graph),
                           Create(sl_line), Write(sl_tag), Write(info))
             else:
-                self.play(
-                    FadeOut(prev_group),
-                    FadeIn(current_group),
-                    run_time=0.9,
-                )
+                self.play(FadeOut(prev_group), FadeIn(current_group), run_time=0.9)
 
             self.wait(2.5)
             prev_group = current_group
 
-        # ── Trade-off summary ──────────────────────────────────────────────────
-        self.play(FadeOut(VGroup(prev_group, ax_t, ax_f,
-                                  t_hdr, f_hdr, t_lbl, f_lbl, f_ylbl)))
 
-        # Table header
+class WindowTradeoffScene(Scene):
+    def construct(self):
         header = VGroup(
-            Text("Window",     font_size=20, color=GREY_A),
-            Text("Side lobe",  font_size=20, color=GREY_A),
-            Text("Main lobe",  font_size=20, color=GREY_A),
+            Text("Window",    font_size=20, color=GREY_A),
+            Text("Side lobe", font_size=20, color=GREY_A),
+            Text("Main lobe", font_size=20, color=GREY_A),
         ).arrange(RIGHT, buff=1.4)
 
         rows = [header]
-        row_data = [
-            ("Rectangular", "-13 dB", "narrowest → best freq. resolution", BLUE),
-            ("Hann",        "-31 dB", "wider → good trade-off",            GREEN),
-            ("Hamming",     "-41 dB", "wider → good trade-off",            ORANGE),
-            ("Blackman",    "-57 dB", "widest → best leakage suppression", RED),
-        ]
-        for rname, rsl, rml, rcolor in row_data:
+        for name, _, color, sl_db in WINDOWS:
             row = VGroup(
-                Text(rname, font_size=19, color=rcolor),
-                Text(rsl,   font_size=19, color=rcolor),
-                Text(rml,   font_size=19, color=rcolor),
+                Text(name,              font_size=19, color=color),
+                Text(f"{sl_db} dB",     font_size=19, color=color),
+                Text(MAIN_LOBE[name],   font_size=19, color=color),
             ).arrange(RIGHT, buff=1.4)
             rows.append(row)
 
@@ -162,9 +137,9 @@ class WindowComparison(Scene):
             self.wait(0.35)
         self.wait(3)
 
-        # ── Side-lobe masking explanation (Q1 / Q3) ───────────────────────────
-        self.play(FadeOut(tradeoff))
 
+class WindowMaskingScene(Scene):
+    def construct(self):
         masking = VGroup(
             Text("Q1  Why does 916 Hz disappear with rectangular?", font_size=24, color=YELLOW),
             Text("A strong harmonic's side lobes (−13 dB for rectangular)", font_size=20),

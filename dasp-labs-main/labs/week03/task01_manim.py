@@ -4,11 +4,18 @@ Answers the TODO reflection questions:
   Q2  Why leakage occurs (on-bin vs. off-bin DFT animation)
   Q3  Minimum N for ±2 Hz frequency accuracy
 
-Run from the repository root:
-    manim -pql labs/week03/task01_manim.py LeakageExplanation
+Parallel render (recommended):
+    python dasp-labs-main/labs/week03/render_parallel.py task01
+
+Single scene:
+    manim -qk dasp-labs-main/labs/week03/task01_manim.py LeakageOnOffScene
 """
 from manim import *
 import numpy as np
+
+config.frame_rate = 60
+config.pixel_height = 2160
+config.pixel_width = 3840
 
 
 def make_stems(ax, xs, ys, color, sw=2.5):
@@ -18,19 +25,17 @@ def make_stems(ax, xs, ys, color, sw=2.5):
     return g
 
 
-class LeakageExplanation(Scene):
+class LeakageOnOffScene(Scene):
     def construct(self):
-        N = 64
-        n = np.arange(N)
+        N    = 64
+        n    = np.arange(N)
         bins = np.arange(N // 2 + 1)
 
-        # ── Title ──────────────────────────────────────────────────────────────
         title = Text("Spectral Leakage", font_size=42, color=YELLOW)
         self.play(Write(title))
         self.wait(0.6)
         self.play(title.animate.scale(0.6).to_edge(UP))
 
-        # ── Axes ───────────────────────────────────────────────────────────────
         ax_t = Axes(
             x_range=[0, 63, 16], y_range=[-1.3, 1.3, 0.5],
             x_length=5.5, y_length=2.4, tips=False,
@@ -41,55 +46,44 @@ class LeakageExplanation(Scene):
             x_length=5.5, y_length=2.4, tips=False,
         ).shift(RIGHT * 3.2 + UP * 0.5)
 
-        t_hdr = Text("Time domain", font_size=18).next_to(ax_t, UP, buff=0.05)
-        f_hdr = Text("DFT magnitude", font_size=18).next_to(ax_f, UP, buff=0.05)
-        t_lbl = Text("n  (sample)", font_size=16).next_to(ax_t, DOWN, buff=0.1)
-        f_lbl = Text("k  (bin)", font_size=16).next_to(ax_f, DOWN, buff=0.1)
+        t_hdr = Text("Time domain",   font_size=18).next_to(ax_t, UP,   buff=0.05)
+        f_hdr = Text("DFT magnitude", font_size=18).next_to(ax_f, UP,   buff=0.05)
+        t_lbl = Text("n  (sample)",   font_size=16).next_to(ax_t, DOWN, buff=0.1)
+        f_lbl = Text("k  (bin)",      font_size=16).next_to(ax_f, DOWN, buff=0.1)
 
         self.play(Create(ax_t), Create(ax_f),
                   Write(t_hdr), Write(f_hdr), Write(t_lbl), Write(f_lbl))
 
-        # ── Case A: on-bin (integer bin k=8) ───────────────────────────────────
-        k_on = 8.0
-        sig_on = np.sin(2 * np.pi * k_on * n / N)
-        X_on = np.abs(np.fft.rfft(sig_on)) * 2 / N
-
-        t_graph = ax_t.plot_line_graph(
-            n.tolist(), sig_on.tolist(),
-            line_color=BLUE, add_vertex_dots=False, stroke_width=2.2,
-        )
-        f_stems = make_stems(ax_f, bins, X_on, color=BLUE)
+        sig_on  = np.sin(2 * np.pi * 8.0 * n / N)
+        X_on    = np.abs(np.fft.rfft(sig_on)) * 2 / N
+        t_graph  = ax_t.plot_line_graph(n.tolist(), sig_on.tolist(),
+                       line_color=BLUE, add_vertex_dots=False, stroke_width=2.2)
+        f_stems  = make_stems(ax_f, bins, X_on, BLUE)
         case_lbl = Text("On-bin  (k = 8.0 exactly) → single clean spike",
                         font_size=19, color=BLUE).to_edge(DOWN, buff=0.5)
 
         self.play(Create(t_graph), Create(f_stems), Write(case_lbl))
         self.wait(2.5)
 
-        # ── Case B: off-bin (k=8.5) ────────────────────────────────────────────
-        k_off = 8.5
-        sig_off = np.sin(2 * np.pi * k_off * n / N)
-        X_off = np.abs(np.fft.rfft(sig_off)) * 2 / N
-
-        t_graph_off = ax_t.plot_line_graph(
-            n.tolist(), sig_off.tolist(),
-            line_color=RED, add_vertex_dots=False, stroke_width=2.2,
-        )
-        f_stems_off = make_stems(ax_f, bins, X_off, color=RED)
+        sig_off      = np.sin(2 * np.pi * 8.5 * n / N)
+        X_off        = np.abs(np.fft.rfft(sig_off)) * 2 / N
+        t_graph_off  = ax_t.plot_line_graph(n.tolist(), sig_off.tolist(),
+                           line_color=RED, add_vertex_dots=False, stroke_width=2.2)
+        f_stems_off  = make_stems(ax_f, bins, X_off, RED)
         case_lbl_off = Text("Off-bin  (k = 8.5) → energy spreads across ALL bins!",
                              font_size=19, color=RED).to_edge(DOWN, buff=0.5)
 
         self.play(
-            Transform(t_graph, t_graph_off),
-            Transform(f_stems, f_stems_off),
+            Transform(t_graph,  t_graph_off),
+            Transform(f_stems,  f_stems_off),
             Transform(case_lbl, case_lbl_off),
             run_time=1.4,
         )
         self.wait(2.5)
 
-        # ── Explanation of why ─────────────────────────────────────────────────
-        self.play(FadeOut(VGroup(ax_t, ax_f, t_graph, f_stems, case_lbl,
-                                  t_hdr, f_hdr, t_lbl, f_lbl)))
 
+class LeakageWhyScene(Scene):
+    def construct(self):
         why = VGroup(
             Text("Why spectral leakage occurs  (Q2)", font_size=28, color=YELLOW),
             Text("The DFT assumes the signal repeats every N samples.", font_size=21),
@@ -104,23 +98,14 @@ class LeakageExplanation(Scene):
             self.wait(0.2)
         self.wait(2.5)
 
-        # ── Minimum N derivation (Q3) ──────────────────────────────────────────
-        self.play(FadeOut(why))
 
+class LeakageQ3Scene(Scene):
+    def construct(self):
         q3 = VGroup(
             Text("Q3 — Minimum N for ±2 Hz accuracy", font_size=28, color=YELLOW),
-            MathTex(
-                r"\Delta f = \frac{f_s}{N} \leq 2\,\text{Hz}",
-                font_size=40,
-            ),
-            MathTex(
-                r"N \;\geq\; \frac{f_s}{2\,\text{Hz}} \;=\; \frac{48{,}000}{2} \;=\; 24{,}000",
-                font_size=36,
-            ),
-            MathTex(
-                r"T \;=\; \frac{N}{f_s} \;=\; \frac{24{,}000}{48{,}000} \;=\; 0.5\,\text{s} \;=\; 500\,\text{ms}",
-                font_size=36,
-            ),
+            Text("Δf = fs / N  ≤  2 Hz", font_size=36),
+            Text("N  ≥  fs / 2 Hz  =  48 000 / 2  =  24 000", font_size=32),
+            Text("T  =  N / fs  =  24 000 / 48 000  =  0.5 s  =  500 ms", font_size=32),
             Text("→ Need a 500 ms frame  (vs. the 85 ms frame used above)",
                  font_size=22, color=GREEN),
         ).arrange(DOWN, buff=0.48)
