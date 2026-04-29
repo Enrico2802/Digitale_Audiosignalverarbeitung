@@ -1,0 +1,3 @@
+file 'media/videos/task03_manim/2160p60/Part1Scene.mp4'
+file 'media/videos/task03_manim/2160p60/Part2Scene.mp4'
+file 'media/videos/task03_manim/2160p60/ConclusionScene.mp4'

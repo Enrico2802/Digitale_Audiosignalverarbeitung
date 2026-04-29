@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(where ffmpeg *)",
+      "Read(//c/Users/Kiname/AppData/**)",
+      "Bash(python -c \"import manim; import os; print\\(os.path.dirname\\(manim.__file__\\)\\)\")",
+      "Read(//c/Program Files/**)",
+      "Bash(python -c \"from manim.utils.module_ops import *; import manim._config; print\\(getattr\\(manim._config, 'ffmpeg_executable', 'not found'\\)\\)\")",
+      "Bash(python -c \"from manim import config; print\\(config.ffmpeg_executable\\)\")",
+      "Bash(python -c \"import shutil; print\\(shutil.which\\('ffmpeg'\\)\\)\")",
+      "Bash(python -c \"import subprocess; r = subprocess.run\\(['manim', '--version'], capture_output=True, text=True\\); print\\(r.stdout, r.stderr\\)\")",
+      "Bash(python -c \"import imageio_ffmpeg; print\\(imageio_ffmpeg.get_ffmpeg_exe\\(\\)\\)\")",
+      "Bash(python -c \"import av; print\\(av.__file__\\)\")"
+    ]
+  }
+}
