@@ -175,23 +175,33 @@ class FrequencyMaskScene(Scene):
 
 class BrickWallScene(Scene):
     def construct(self):
-        explanation = VGroup(
+        part1 = VGroup(
             Text("The Brick-Wall Filter", font_size=34, color=YELLOW),
             Text("Setting bins to zero creates a perfectly sharp cutoff in frequency.", font_size=21),
             Text("In the time domain, this corresponds to convolution with a sinc function,", font_size=21),
             Text("which is infinitely long → causes ringing (Gibbs phenomenon).", font_size=21, color=RED),
-            Text("", font_size=8),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.28).center()
+
+        for mob in part1:
+            self.play(Write(mob), run_time=0.6)
+            self.wait(0.2)
+        self.wait(1.5)
+
+        self.play(FadeOut(part1))
+        self.wait(0.3)
+
+        part2 = VGroup(
+            
             Text("Round-trip error:", font_size=24, color=ORANGE),
             Text("  Unmodified:  irfft(rfft(x)) ≈ x  — error is pure floating-point noise (~1e-15)",
                  font_size=20, color=GREEN),
             Text("  Filtered:    irfft(Zxx_filtered) ≠ x  — error = removed frequency content",
                  font_size=20, color=RED),
-            Text("", font_size=8),
             Text("Week 5 — Smooth filters (FIR/IIR) avoid the ringing", font_size=22, color=BLUE_B),
             Text("by tapering the frequency response gradually instead of a hard step.", font_size=22, color=BLUE_B),
-        ).arrange(DOWN, aligned_edge=LEFT, buff=0.25).center()
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.28).center()
 
-        for mob in explanation:
+        for mob in part2:
             self.play(Write(mob), run_time=0.6)
             self.wait(0.2)
         self.wait(3)
