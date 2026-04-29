@@ -14,6 +14,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import soundfile as sf
+from scipy.signal import stft, istft
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT / "src"))
@@ -21,11 +22,11 @@ sys.path.append(str(ROOT / "src"))
 AUDIO_DIR = ROOT.parent / "assets" / "audio"
 OUTPUT_DIR = Path(__file__).resolve().parent / "generated"
 
-FS = 48000
-N_b = 2048
-HOP = N_b // 4    # 75 % overlap
-F_LOW = 300.0        # Hz — telephone passband lower edge
-F_HIGH = 3000.0      # Hz — telephone passband upper edge
+FS     = 48000
+N_b    = 2048
+HOP    = N_b // 4
+F_LOW  = 300.0
+F_HIGH = 3000.0
 
 
 def main() -> None:
@@ -35,50 +36,67 @@ def main() -> None:
         x = x.mean(axis=1)
     x = x[: int(3.0 * fs)]
 
-    # TODO: Compute the STFT of x.
-    #   Hint: from scipy.signal import stft
-    #         f_ax, t_ax, Zxx = stft(x, fs, nperseg=N_b,
-    #                                noverlap=N_b - HOP, window='hann')
-    f_ax = None
-    t_ax = None
-    Zxx = None
+    f_ax, t_ax, Zxx = stft(x, fs, nperseg=N_b, noverlap=N_b - HOP, window='hann')
 
-    # TODO: Build Zxx_filtered — a copy of Zxx with all bins outside
-    #   [F_LOW, F_HIGH] set to zero.
-    #   Hint: np.searchsorted(f_ax, F_LOW) gives the first bin index >= F_LOW.
-    Zxx_filtered = None
+    Zxx_filtered = Zxx.copy()
+    low_idx  = np.searchsorted(f_ax, F_LOW)
+    high_idx = np.searchsorted(f_ax, F_HIGH)
+    Zxx_filtered[:low_idx, :]  = 0
+    Zxx_filtered[high_idx:, :] = 0
 
-    # TODO: Reconstruct the filtered signal with iSTFT (same parameters as above).
-    #   Hint: from scipy.signal import istft
-    y = None
+    _, y = istft(Zxx_filtered, fs, nperseg=N_b, noverlap=N_b - HOP, window='hann')
+    y = y[:len(x)]
 
-    # TODO: Save both the original and the filtered signal as WAV files.
-    #   Listen to both and compare.
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    sf.write(str(OUTPUT_DIR / "speech_original.wav"),  x.astype(np.float32), fs)
+    sf.write(str(OUTPUT_DIR / "speech_telephone.wav"), y.astype(np.float32), fs)
+    print(f"Saved orignal and filtered WAVs to {OUTPUT_DIR}")
 
-    # TODO: Plot side-by-side spectrograms of original and filtered signal.
-    #   Hint: compute S_db = 20*np.log10(np.abs(Zxx) + 1e-8) for both,
-    #         then use pcolormesh in two subplots.
-    #         Add horizontal lines at F_LOW and F_HIGH to mark the passband.
+    S_db_orig     = 20 * np.log10(np.abs(Zxx)          + 1e-8)
+    S_db_filtered = 20 * np.log10(np.abs(Zxx_filtered)  + 1e-8)
 
-    # Reflection questions:
-    # 1. Listen to both files. Does the filtered version sound like a telephone?
-    #    What is missing compared to the original?
+    fig, axes = plt.subplots(1, 2, figsize=(16, 5))
+    for ax, S_db, title in [
+        (axes[0], S_db_orig,     "Original speech"),
+        (axes[1], S_db_filtered, f"Telephone filtered ({F_LOW:.0f}–{F_HIGH:.0f} Hz)"),
+    ]:
+        img = ax.pcolormesh(t_ax, f_ax, S_db,
+                            shading="auto", cmap="inferno", vmin=-80, vmax=0)
+        ax.set_ylim(0, 8000)
+        ax.set_xlabel("Time [s]")
+        ax.set_ylabel("Frequency [Hz]")
+        ax.set_title(title)
+        ax.axhline(F_LOW,  color="cyan", linestyle="--", linewidth=1.5,
+                   label=f"{F_LOW:.0f} Hz")
+        ax.axhline(F_HIGH, color="lime", linestyle="--", linewidth=1.5,
+                   label=f"{F_HIGH:.0f} Hz")
+        ax.legend(loc="upper right", fontsize=9)
+        plt.colorbar(img, ax=ax, label="Magnitude [dB]")
+
+    plt.tight_layout()
+    plt.show()
+
+    _, x_rt = istft(Zxx, fs, nperseg=N_b, noverlap=N_b - HOP, window='hann')
+    x_rt = x_rt[:len(x)]
+    print(f"Unmodified round-trip error: {np.max(np.abs(x_rt - x)):.2e}")
+    print(f"Filtered round-trip error:   {np.max(np.abs(y   - x)):.2e}")
+
+    # Reflection answers:
+    # 1. The filtered version sounds thin/tinny — bass and high frequencies removed.
+    #    It clearly resembles a telephone call.
     #
-    # 2. Look at the spectrograms. Is the cutoff sharp?
-    #    Do you hear any ringing or artefacts in the filtered signal?
-    #    (This kind of hard cutoff is called a "brick-wall" filter.)
+    # 2. The cutoff is perfectly sharp (brick-wall). You may hear slight ringing
+    #    at the cutoff frequencies due to the Gibbs phenomenon.
     #
-    # 3. Brick-wall filters cause ringing because a sudden step in the frequency
-    #    domain corresponds to an infinitely long sinc function in the time domain.
-    #    Week 5 will show how to design smoother filters that avoid this.
+    # 3. A hard step in frequency ↔ infinite sinc in time → ringing artefacts.
+    #    Week 5 shows smooth (FIR/IIR) filters that avoid this.
     #
-    # 4. The round-trip is no longer perfect once you modify Zxx.
-    #    Compute max|y[:len(x)] - x| and compare it to the unmodified round-trip
-    #    error from Task 3. What does the error represent now?
+    # 4. The filtered round-trip error is much larger than the unmodified one:
+    #    it now represents the intentionally removed frequency content,
+    #    not numerical noise.
     #
-    # 5. Try changing F_HIGH to 1000 Hz. How does the speech intelligibility
-    #    change? At what cutoff does it become hard to understand?
+    # 5. Lowering F_HIGH to 1000 Hz makes speech barely intelligible — consonants
+    #    (which distinguish words) live largely above 1 kHz.
 
 
 if __name__ == "__main__":

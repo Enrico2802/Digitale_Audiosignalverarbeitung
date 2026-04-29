@@ -29,30 +29,48 @@ def main() -> None:
 
     print(f"Loaded spectrum: {len(X)} bins, fs={fs} Hz, original length N={N}")
 
-    # TODO: Reconstruct the time-domain signal from the spectrum.
-    #   Hint: np.fft.irfft(X, n=N) undoes the rfft.
-    x = None
+    x = np.fft.irfft(X, n=N)
 
-    # TODO: Save the reconstructed signal as a WAV file and listen to it.
-    #   Hint: soundfile.write(path, signal, samplerate)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    sf.write(str(OUTPUT_DIR / "mystery_reconstructed.wav"), x.astype(np.float32), fs)
+    print(f"Saved: {OUTPUT_DIR / 'mystery_reconstructed.wav'}")
 
-    # TODO: Plot the magnitude spectrum in dB and the reconstructed waveform.
-    #   Hint: freqs = np.fft.rfftfreq(N, d=1/fs)
-    #         magnitude_db = 20 * np.log10(np.abs(X) + 1e-8)
+    freqs        = np.fft.rfftfreq(N, d=1 / fs)
+    magnitude_db = 20 * np.log10(np.abs(X) + 1e-8)
+    t_axis       = np.arange(N) / fs
 
-    # Reflection questions:
-    # 1. Listen to the output WAV. What is the mystery signal?
+    fig, axes = plt.subplots(2, 1, figsize=(12, 8))
+
+    axes[0].plot(freqs, magnitude_db, linewidth=0.8, color="steelblue")
+    axes[0].set_xlabel("Frequency [Hz]")
+    axes[0].set_ylabel("Magnitude [dB]")
+    axes[0].set_title("Mystery Signal — Magnitude Spectrum")
+    axes[0].grid(True, alpha=0.4)
+
+    axes[1].plot(t_axis, x, linewidth=0.6, color="steelblue")
+    axes[1].set_xlabel("Time [s]")
+    axes[1].set_ylabel("Amplitude")
+    axes[1].set_title("Reconstructed Time-Domain Signal")
+    axes[1].grid(True, alpha=0.4)
+
+    plt.tight_layout()
+    plt.show()
+
+    X_recomputed = np.fft.rfft(x)
+    print(f"Round-trip matches original X: {np.allclose(X, X_recomputed)}")
+    print(f"Max reconstruction error:      {np.max(np.abs(X - X_recomputed)):.2e}")
+
+    # Reflection answers:
+    # 1. Listen to the output WAV to identify the mystery signal.
     #
-    # 2. Look at the magnitude spectrum. What frequency range carries most of
-    #    the energy? Does the shape match what you heard?
+    # 2. The magnitude spectrum shows where energy is concentrated.
+    #    Harmonic peaks = pitched sound; broadband = noise/transient.
     #
-    # 3. The rfft returns only the positive-frequency half of the spectrum.
-    #    How many complex values does X contain compared to N samples?
-    #    Where did the other half go?
+    # 3. rfft returns N//2 + 1 complex bins (for even N).
+    #    The upper half is the complex conjugate mirror of the lower half —
+    #    it carries no new information for real-valued signals.
     #
-    # 4. Recompute the rfft of x and compare it to the original X.
-    #    Are they identical? (Hint: np.allclose)
+    # 4. np.allclose(X, np.fft.rfft(x)) should print True (within float64 precision).
 
 
 if __name__ == "__main__":

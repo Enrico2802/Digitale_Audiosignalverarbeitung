@@ -31,14 +31,20 @@ def main() -> None:
     N_b = 512
     hop = N_b // 4   # 75 % overlap
 
-    # TODO: Compute the STFT of x.
-    #   Slide a Hann-windowed frame across x in steps of `hop`, rfft each frame,
-    #   and collect the results. Stack into a 2-D dB magnitude array when done.
-    #   Hint: np.hanning(N_b) gives the window; np.fft.rfftfreq(N_b, d=1/FS) gives the frequency axis.
+    window = np.hanning(N_b)
     frames = []
-    times = []
-    S_db = None
-    freqs = None
+    times  = []
+
+    for start in range(0, n_total - N_b + 1, hop):
+        frame = x[start:start + N_b] * window
+        frames.append(np.fft.rfft(frame))
+        times.append((start + N_b // 2) / FS)
+
+    S     = np.abs(np.array(frames)).T          # shape: (n_freqs, n_frames)
+    S_db  = 20 * np.log10(S + 1e-9)
+    S_db -= S_db.max()
+    freqs = np.fft.rfftfreq(N_b, d=1 / FS)
+    times = np.array(times)
 
     fig, ax = plt.subplots(figsize=(11, 5))
     img = ax.pcolormesh(times, freqs, S_db,
@@ -54,15 +60,22 @@ def main() -> None:
     # TODO:
     # 1. At what time does the frequency change in the spectrogram?
     #    Does it match the expected 0.5 s?
+    #    → Yes, the bright band clearly shifts from ~440 Hz to ~880 Hz at t≈0.5 s.
     #
     # 2. Change N_b to 128 and rerun. How do the frequency bands look compared to N_b=512?
     #    Can you still clearly see that the frequency changed at t=0.5 s?
+    #    → N_b=128: Δf=62.5 Hz — wide blurry bands, poor frequency resolution.
+    #      The transition at 0.5 s is still visible and very sharp in time.
     #
     # 3. Change N_b to 2048 and rerun. What do you observe near t=0.5 s?
     #    How sharp is the transition in time compared to N_b=128?
+    #    → N_b=2048: Δf=3.9 Hz — very narrow sharp bands, excellent frequency resolution.
+    #      But the transition smears over ~0.25 s because each frame covers 256 ms.
     #
     # 4. What value of N_b gives the best balance between time and frequency resolution
     #    for this signal? Justify your answer with Δf = fs / N_b.
+    #    → N_b=512 is a good balance: Δf = 8000/512 = 15.6 Hz (resolves 440 vs 880 Hz),
+    #      Δt = 512/8000 = 64 ms (short enough to see the 0.5 s transition cleanly).
 
 
 if __name__ == "__main__":

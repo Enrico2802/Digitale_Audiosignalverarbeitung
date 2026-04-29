@@ -14,6 +14,7 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import soundfile as sf
+from scipy.signal import stft
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.append(str(ROOT / "src"))
@@ -35,12 +36,8 @@ def main() -> None:
             x = x.mean(axis=1)
         x = x[:int(3.0 * fs)]   # first 3 seconds
 
-        # TODO: Compute the STFT of x and convert to dB magnitude.
-        #   Hint: from scipy.signal import stft
-        #         f, t, Zxx = stft(x, fs, nperseg=N_b, noverlap=N_b-HOP, window='hann')
-        f = None
-        t = None
-        S_db = None
+        f, t, Zxx = stft(x, fs, nperseg=N_b, noverlap=N_b - HOP, window='hann')
+        S_db = 20 * np.log10(np.abs(Zxx) + 1e-8)
 
         fig, ax = plt.subplots(figsize=(12, 5))
         img = ax.pcolormesh(t, f, S_db,
@@ -55,22 +52,18 @@ def main() -> None:
 
     # TODO:
     # 1. Speech: can you spot pauses between words or breath sounds in the spectrogram?
-    #    What frequency range carries most of the energy?
-    #    Can you identify any moment where a consonant (e.g. 's', 't') appears?
-    #    How does a consonant look different from a vowel?
+    #    → Silent gaps appear as near-black columns. Sibilants (s, t) show broadband
+    #      energy above 4 kHz. Vowels show concentrated horizontal formant bands.
     #
-    # 2. Guitar: zoom in by temporarily changing ax.set_ylim(0, 8000) to
-    #    ax.set_ylim(0, 1000) and rerunning. You know from Week 3 that the
-    #    fundamental is 82.4 Hz. Can you see horizontal lines at multiples of
-    #    that frequency? How many harmonics are clearly visible?
+    # 2. Guitar: zoom in (ylim 0–1000 Hz). Fundamental at 82.4 Hz and harmonics
+    #    at 164.8, 247.2, 329.6 Hz etc. are visible as bright horizontal lines.
     #
-    # 3. Guitar (full y-axis view): look at the brightness at t=0 vs. t=1 s.
-    #    Up to roughly what frequency does energy reach at the attack?
-    #    How high does it reach during the sustained portion?
-    #    What does this tell you about how a plucked string sounds over time?
+    # 3. Guitar attack vs. sustained: at t≈0 the spectrogram is bright across the
+    #    full frequency range (broadband attack transient). From t≈0.1 s onward
+    #    only the harmonic lines remain — the string settles into its resonant modes.
     #
-    # 4. Speech vs. guitar: which signal has more energy above 4 kHz?
-    #    What does that tell you about the difference in their timbres?
+    # 4. Speech vs. guitar: speech has more energy above 4 kHz (fricatives, sibilants).
+    #    Guitar energy is concentrated in the harmonic series and decays above ~2 kHz.
 
 
 if __name__ == "__main__":
