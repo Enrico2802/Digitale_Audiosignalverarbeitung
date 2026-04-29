@@ -63,10 +63,11 @@ def main() -> None:
         #         mag_db -= mag_db.max()
         #
         # Replace the lines below with your solution:
-        w = None
-        X = None
-        freqs = None
-        mag_db = None
+        w = np.hanning(N)
+        X = np.fft.rfft(segment * w)
+        freqs = np.fft.rfftfreq(N, d=1.0 / fs)
+        mag_db = 20 * np.log10(np.abs(X) + 1e-9)
+        mag_db -= mag_db.max()
         # ---------------------------------------------------------------------
 
         mask = (freqs >= xlim[0]) & (freqs <= xlim[1])
@@ -116,11 +117,12 @@ def main() -> None:
         #         mag_pad -= mag_pad.max()
         #
         # Replace the lines below with your solution:
-        N_pad = None
-        x_pad = None
-        X_pad = None
-        freqs_pad = None
-        mag_pad = None
+        N_pad = N_long * pad_factor
+        x_pad = np.concatenate([segment * w, np.zeros(N_pad - N_long)])
+        X_pad = np.fft.rfft(x_pad)
+        freqs_pad = np.fft.rfftfreq(N_pad, d=1.0 / fs)
+        mag_pad = 20 * np.log10(np.abs(X_pad) + 1e-9)
+        mag_pad -= mag_pad.max()
         # ---------------------------------------------------------------------
 
         mask = (freqs_pad >= 60) & (freqs_pad <= 110)

@@ -58,8 +58,9 @@ def main() -> None:
         #         mag_db -= mag_db.max()
         #
         # Replace the two lines below with your solution:
-        X = None
-        mag_db = None
+        X = np.fft.rfft(frame * w)
+        mag_db = 20 * np.log10(np.abs(X) + 1e-9)
+        mag_db -= mag_db.max()
         # ---------------------------------------------------------------------
 
         ax.plot(freqs, mag_db, linewidth=1.2, color="tab:blue")

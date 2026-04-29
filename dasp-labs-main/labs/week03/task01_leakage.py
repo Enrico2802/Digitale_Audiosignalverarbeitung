@@ -52,9 +52,9 @@ def main() -> None:
     #         (the + 1e-9 prevents log(0))
     #
     # Replace the three lines below with your solution:
-    X = None
-    freqs = None
-    mag_db = None
+    X = np.fft.rfft(frame)
+    freqs = np.fft.rfftfreq(N, d=1.0 / fs)
+    mag_db = 20 * np.log10(np.abs(X) / np.max(np.abs(X)) + 1e-9)
     # -------------------------------------------------------------------------
 
     fig, ax = plt.subplots(figsize=(11, 4))
