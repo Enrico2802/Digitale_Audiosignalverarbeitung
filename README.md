@@ -3,12 +3,24 @@
 Dieses Repository enthält die Übungen zur digitalen Audiosignalverarbeitung. Es ist in mehrere Laborwochen aufgeteilt und enthält Python-Skripte zur Erzeugung, Analyse und Visualisierung von Audiosignalen.
 
 ## How to Animate
+
+Abhängigkeiten installieren:
+
 ```bash
- python dasp-labs-main/labs/week03/render_parallel.py task01
- python dasp-labs-main/labs/week03/render_parallel.py task02
- python dasp-labs-main/labs/week03/render_parallel.py task03
- ```
-Funktioniert aktuell nur für Woche 3 
+python -m pip install -r requirements.txt
+```
+
+Animationen rendern (paralleles Rendering auf mehreren CPU-Kernen):
+
+```bash
+python dasp-labs-main/labs/week03/render_parallel.py task01
+python dasp-labs-main/labs/week03/render_parallel.py task02
+python dasp-labs-main/labs/week03/render_parallel.py task03
+```
+
+Die fertigen MP4s landen unter `media/videos/{task}_manim/2160p60/`.
+
+> Funktioniert aktuell nur für Woche 3.
 
 
 ## Projektstruktur
@@ -29,6 +41,8 @@ Funktioniert aktuell nur für Woche 3
   - `numpy`
   - `matplotlib`
   - `soundfile`
+  - `manim`
+  - `av` (PyAV, für paralleles Rendering)
 
 ## Installation
 
