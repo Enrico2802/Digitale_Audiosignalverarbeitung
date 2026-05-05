@@ -3,6 +3,8 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.venv312
+
 # C extensions
 *.so
 
