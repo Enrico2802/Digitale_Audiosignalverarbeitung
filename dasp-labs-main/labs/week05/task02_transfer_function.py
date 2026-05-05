@@ -206,8 +206,15 @@ def main() -> None:
     #       constant signal, so the gain at Ω=0 should be 0. Is that what you see?
     #       Listen — does it sound like a high-pass filter?
 
-    b_custom = ...   # TODO: try np.array([1.0, -1.0])
-    # Hint: measure_gain / np.convolve / sf.write — same pattern as above
+    b_custom = np.array([1.0, -1.0])
+    g_custom = [measure_gain(b_custom, f) for f in TEST_FREQS]
+    ax.plot(smooth_freqs, analytical_magnitude(b_custom, smooth_freqs),
+            color="C4", linewidth=1.5, label="difference [1, -1]")
+    ax.plot(TEST_FREQS, g_custom, "o", color="C4", markersize=5)
+    y_custom = np.convolve(x_speech, b_custom, mode="same")
+    sf.write(OUTPUT_DIR / "task2_difference_filter.wav", y_custom, fs)
+    print(f"  Saved task2_difference_filter.wav  (b = {b_custom})")
+    ax.legend()
 
     # -------------------------------------------------------------------------
     # Extension — Apply your favourite filter to a music file

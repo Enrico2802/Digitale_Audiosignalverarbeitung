@@ -101,6 +101,13 @@ def main() -> None:
     #   1d. TODO: repeat with x_dc = np.full(len(t), 2.0).
     #       What is y[n] now? Does doubling the input double the output?
     #       (This is the linearity property of LTI systems from the lecture.)
+    x_dc2 = np.full(len(t), 2.0)
+    y_dc2 = apply_fir(B, x_dc2)
+    print("Part 1d — DC probe with amplitude 2.0:")
+    print(f"  y_dc2[5]  = {y_dc2[5]:.6f}")
+    print(f"  y_dc2[50] = {y_dc2[50]:.6f}")
+    print(f"  Ratio y_dc2/y_dc = {y_dc2[50]/y_dc[50]:.4f}  (should be 2.0 — linearity)")
+    print()
 
     # -------------------------------------------------------------------------
     # Part 2 — Test with two sinusoids
@@ -119,11 +126,11 @@ def main() -> None:
     #   (because the input signal has arrived at all delays).
     #   Hint: apply_fir(B, x_low), np.max(np.abs(y[5:]))
 
-    y_low  = ...   # TODO
-    y_high = ...   # TODO
+    y_low  = apply_fir(B, x_low)
+    y_high = apply_fir(B, x_high)
 
-    gain_low  = ...   # TODO
-    gain_high = ...   # TODO
+    gain_low  = np.max(np.abs(y_low[5:]))  / np.max(np.abs(x_low[5:]))
+    gain_high = np.max(np.abs(y_high[5:])) / np.max(np.abs(x_high[5:]))
 
     print("Part 2 — Sinusoid probe:")
     print(f"  Gain at {F_LOW:.0f} Hz  = {gain_low:.4f}")
@@ -136,6 +143,19 @@ def main() -> None:
     #   Use only the first 200 samples so the waveform is readable.
     #   Can you see the amplitude change? Can you spot a small time shift?
     #   Hint: plt.subplots(2, 2, sharex=True),   ax.plot(x_low[:200])
+    n_plot = 200
+    fig2c, axes2c = plt.subplots(2, 2, figsize=(12, 6), sharex=True)
+    axes2c[0, 0].plot(x_low[:n_plot],  color="C0"); axes2c[0, 0].set_title(f"Input  {F_LOW:.0f} Hz")
+    axes2c[0, 1].plot(y_low[:n_plot],  color="C1"); axes2c[0, 1].set_title(f"Output {F_LOW:.0f} Hz  (gain={gain_low:.3f})")
+    axes2c[1, 0].plot(x_high[:n_plot], color="C2"); axes2c[1, 0].set_title(f"Input  {F_HIGH:.0f} Hz")
+    axes2c[1, 1].plot(y_high[:n_plot], color="C3"); axes2c[1, 1].set_title(f"Output {F_HIGH:.0f} Hz  (gain={gain_high:.3f})")
+    for ax in axes2c.flat:
+        ax.set_ylim(-1.2, 1.2); ax.grid(True, alpha=0.3)
+    axes2c[1, 0].set_xlabel("Sample n"); axes2c[1, 1].set_xlabel("Sample n")
+    fig2c.suptitle("Part 2c — FIR filter: sinusoid in / sinusoid out", y=1.01)
+    plt.tight_layout()
+    plt.savefig(OUTPUT_DIR / "task1_sinusoid_probe.svg")
+    plt.show()
 
     # -------------------------------------------------------------------------
     # Part 3 — Verify: sinusoid in → sinusoid out
@@ -147,10 +167,16 @@ def main() -> None:
     #   Skip the first 5 samples (warm-up) before computing the DFT.
     #   Hint: np.fft.rfft(y_low[5:]), np.fft.rfftfreq(N, d=1/FS), np.argmax
 
-    dominant_freq_low = ...   # TODO
+    y_low_fft = np.fft.rfft(y_low[5:])
+    freqs_low = np.fft.rfftfreq(len(y_low[5:]), d=1 / FS)
+    dominant_freq_low = freqs_low[np.argmax(np.abs(y_low_fft))]
     print(f"Part 3 — dominant frequency in filtered 200 Hz output: {dominant_freq_low:.1f} Hz")
 
     # TODO 3b — repeat for x_high (4 000 Hz). Is the dominant frequency still 4 000 Hz?
+    y_high_fft = np.fft.rfft(y_high[5:])
+    freqs_high = np.fft.rfftfreq(len(y_high[5:]), d=1 / FS)
+    dominant_freq_high = freqs_high[np.argmax(np.abs(y_high_fft))]
+    print(f"Part 3 — dominant frequency in filtered 4000 Hz output: {dominant_freq_high:.1f} Hz")
 
     # TODO 3c — write one sentence: why must this always be true for an LTI system?
 
